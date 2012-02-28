@@ -1,0 +1,18 @@
+/* MISC, PREPARATORY */
+
+#feedback { padding: 4px; background: #eee; color: #55b; border: solid 1px #bbb; font-weight: bold; text-align: center; }
+
+
+/* FORM */
+
+#imgForm { border: solid 4px #ddd; background: #eee; padding: 10px; margin: 30px; width: 600px; overflow:hidden;}
+ #imgForm label { float: left; width: 200px; font-weight: bold; color: #666; clear:both; padding-bottom:10px; }
+ #imgForm input { float: left; }
+ #imgForm input[type="submit"] {clear:both; }
+ #img_upload { width: 400px; }
+ #img_name { width: 200px; }
+
+	
+/* DRAG BOX */
+
+#drag_box { position: absolute; border: solid 1px #333; background: #fff; opacity: .5; alpha(opacity=50); z-index: 10; filter: alpha(opacity=50); }
