@@ -1,0 +1,32 @@
+#HAARPHP Feature Detection Library for PHP
+
+based on [Viola-Jones Feature Detection Algorithm using Haar Cascades](http://www.cs.cmu.edu/~efros/courses/LBMV07/Papers/viola-cvpr-01.pdf)
+
+This is a port of [OpenCV C++ Haar Detection](http://opencv.willowgarage.com/wiki/) (actually a port of [JViolaJones](http://code.google.com/p/jviolajones/) which is a port of OpenCV for Java)
+to PHP.
+
+You can use the openCV cascades to build your detectors.
+
+To do this just transform the opencv xml file to PHP
+using the haartophp java tool (in cascades folder)
+
+example:
+( to use opencv's haarcascades_frontalface_alt.xml  run following command)
+```bash
+haartophp haarcascades_frontalface_alt
+```
+
+this creates a php file: haarcascades_frontalface_alt.php   
+which you can include in your php application
+
+the variable to use in php is similarly  
+$haarcascades_frontalface_alt
+
+Examples  included with face detection
+
+Complete source code
+
+*Contributor* Nikos M.  
+*URL* [Nikos Web Development](http://nikos-web-development.netai.net/ "Nikos Web Development")  
+*URL* [Haar.php blog post](http://nikos-web-development.netai.net/blog/haarphp-feature-detection-with-haar-cascades-in-php/ "Haar.php blog post")  
+*URL* [WorkingClassCode](http://workingclasscode.uphero.com/ "Working Class Code")  
