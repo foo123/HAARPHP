@@ -28,6 +28,8 @@ Complete source code
 
 HAARPHP is also part of PHP classes http://www.phpclasses.org/package/7393-PHP-Detect-features-on-images-such-as-faces-or-mouths.html
 
+#TODO:
+use php to transform cascades xml to php, instead of java (all-php solution)
 
 *Contributor* Nikos M.  
 *URL* [Nikos Web Development](http://nikos-web-development.netai.net/ "Nikos Web Development")  
