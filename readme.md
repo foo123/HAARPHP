@@ -1,9 +1,10 @@
-#HAARPHP Feature Detection Library for PHP
+# HAARPHP 
 
-based on [Viola-Jones Feature Detection Algorithm using Haar Cascades](http://www.cs.cmu.edu/~efros/courses/LBMV07/Papers/viola-cvpr-01.pdf)
+__Feature Detection Library for PHP__
 
-This is a port of [OpenCV C++ Haar Detection](http://opencv.willowgarage.com/wiki/) (actually a port of [JViolaJones](http://code.google.com/p/jviolajones/) which is a port of OpenCV for Java)
-to PHP.
+Based on [Viola-Jones Feature Detection Algorithm using Haar Cascades](http://www.cs.cmu.edu/~efros/courses/LBMV07/Papers/viola-cvpr-01.pdf)
+
+This is a port of [OpenCV C++ Haar Detection](http://opencv.willowgarage.com/wiki/) (actually a port of [JViolaJones](http://code.google.com/p/jviolajones/) which is a port of OpenCV for Java) to PHP.
 
 You can use the __existing openCV cascades__ to build your detectors.
 
@@ -16,11 +17,11 @@ example:
 haartophp haarcascades_frontalface_alt
 ```
 
-this creates a php file: haarcascades_frontalface_alt.php   
+this creates a php file: *haarcascades_frontalface_alt.php*
 which you can include in your php application
 
 the variable to use in php is similarly  
-$haarcascades_frontalface_alt
+*$haarcascades_frontalface_alt*
 
 ###Where to find Haar Cascades xml files to use for feature detection
 
@@ -29,25 +30,22 @@ $haarcascades_frontalface_alt
 * search the web :)
 * [Train your own](http://docs.opencv.org/doc/user_guide/ug_traincascade.html)
 
-Examples  included with face detection
+__Examples included with face detection__
 
-Complete source code
 
-HAARPHP is also part of PHP classes http://www.phpclasses.org/package/7393-PHP-Detect-features-on-images-such-as-faces-or-mouths.html
+*HAARPHP* is also part of PHP classes http://www.phpclasses.org/package/7393-PHP-Detect-features-on-images-such-as-faces-or-mouths.html
 
 ####ChangeLog:
-0.2
-
+__0.2__
 * add haartophp tool in php (all-php solution)
 * optimize array operations, refactor, etc..
 
-0.1
-
+__0.1__
 * initial release
 
-####TODO:
+####TODO
 
-####Notes:
+####Issues/Notes
 cannyPruning seems to fail depending on (a small) image scaling factor (if canny is true)
 
 
