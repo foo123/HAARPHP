@@ -1,30 +1,43 @@
 <?php
-require_once('../cascades/haarcascade_frontalface_alt.php');
-require_once('../src/haar-detector.class.php');
+global $error, $newImage, $haarcascade_frontalface_alt;
 
-/* -----------------
+require(dirname(dirname(__FILE__)).'/cascades/haarcascade_frontalface_alt.php');
+require(dirname(dirname(__FILE__)).'/src/haar-detector.class.php');
+
+
+/* ------------------------------------------------
 | UPLOAD FORM - validate form and handle submission
------------------ */
-$error='';
-if (isset($_POST['upload_form_submitted'])) {
-	if (!isset($_FILES['img_upload']) || empty($_FILES['img_upload']['name'])) {
-		$error = "Error: You didn't upload a file";
-	} else if (!isset($_POST['img_name']) || empty($_POST['img_name'])) {
-		$error = "Error: You didn't specify a file name";
-	} else {
+-------------------------------------------------- */
+$error=false;
+$newImage=false;
+
+if (isset($_POST['upload_form_submitted'])) 
+{
+	if (!isset($_FILES['img_upload']) || empty($_FILES['img_upload']['name'])) 
+    {
+		$error = "<strong>Error:</strong> You didn't upload a file";
+	} 
+    elseif (!isset($_POST['img_name']) || empty($_POST['img_name'])) 
+    {
+		$error = "<strong>Error:</strong> You didn't specify a file name";
+	} 
+    else 
+    {
 		$allowedExtensions = array('jpg', 'jpeg', 'gif', 'png');
 		preg_match('/\.('.implode($allowedExtensions, '|').')$/', $_FILES['img_upload']['name'], $fileExt);
-		$newPath = 'imgs/'.$_POST['img_name'].'.'.$fileExt[1];
-		/*if (file_exists($newPath)) {
+		$newPath = dirname(__FILE__).'/imgs/'.$_POST['img_name'].'.'.$fileExt[1];
+        if (!in_array(substr($fileExt[0], 1), $allowedExtensions)) 
+        {
+			$error = '<strong>Error:</strong> Invalid file format - please upload a picture file';
+		} 
+		/*elseif (file_exists($newPath)) 
+        {
 			$error = "Error: A file with that name already exists";
-		} else*/ if (!in_array(substr($fileExt[0], 1), $allowedExtensions)) {
-			$error = 'Error: Invalid file format - please upload a picture file';
-		} else if (!copy($_FILES['img_upload']['tmp_name'], $newPath)) {
-			$error = 'Error: Could not save file to server';
-		} else {
-			$_SESSION['newPath'] = $newPath;
-			$_SESSION['fileExt'] = $fileExt;
-		}
+		}*/ 
+        elseif (!copy($_FILES['img_upload']['tmp_name'], $newPath)) 
+        {
+			$error = '<strong>Error:</strong> Could not save file to server';
+		} 
 	}
 }
 
@@ -32,41 +45,47 @@ if (isset($_POST['upload_form_submitted'])) {
 /* -----------------
 | CROP saved image
 ----------------- */
-if (isset($_POST['upload_form_submitted'])) {
+if (isset($_POST['upload_form_submitted']) && !$error) 
+{
 
-	switch($_SESSION['fileExt'][1]) {
-		case 'jpg': case 'jpeg':
-			$source_img = imagecreatefromjpeg($_SESSION['newPath']);
+	switch($fileExt[1]) 
+    {
+		case 'jpg': 
+        case 'jpeg':
+			$source_img = imagecreatefromjpeg($newPath);
 			break;
 		case 'gif':
-			$source_img = imagecreatefromgif($_SESSION['newPath']);
+			$source_img = imagecreatefromgif($newPath);
 			break;
 		case 'png':
-			$source_img = imagecreatefrompng($_SESSION['newPath']);
+			$source_img = imagecreatefrompng($newPath);
 			break;
 	}
-	$facedetector=new HAARDetector($haarcascade_frontalface_alt);
-	$facedetector->setImage($source_img,0.25);
-	// cannyPruning set to false since it does not produce expected results (maybe fix in the future)
-	$foundsth=$facedetector->detect(1, 1.25, 0.1, 1, false);
-	if ($foundsth)
+    
+	$facedetector=HAARDetector::getDetector($haarcascade_frontalface_alt);
+    $foundsth=$facedetector
+            // cannyPruning sometimes depends on the image scaling, small image scaling seems to make canny pruning fail (if canny is true)
+            ->setImage($source_img, 0.25)
+            ->detect(1, 1.25, 0.1, 1, false);
+	
+    if ($foundsth)
 	{
 		$found=$facedetector->objects[0]; // take first found feature
 		$dest_img = imagecreatetruecolor($found['width'], $found['height']);
 		imagecopy($dest_img, $source_img, 0, 0, $found['x'], $found['y'], $found['width'], $found['height']);
-		switch($_SESSION['fileExt'][1]) {
+		switch($fileExt[1]) 
+        {
 			case 'jpg': case 'jpeg':
-				imagejpeg($dest_img, $_SESSION['newPath']); break;
+				imagejpeg($dest_img, $newPath); break;
 			case 'gif':
-				imagegif($dest_img, $_SESSION['newPath']); break;
+				imagegif($dest_img, $newPath); break;
 			case 'png':
-				imagepng($dest_img, $_SESSION['newPath']); break;
+				imagepng($dest_img, $newPath); break;
 		}
-		header('Location: index.php');
+        $newImage='imgs/'.$_POST['img_name'].'.'.$fileExt[1];
 	}
 	else
 	{
-		$error .= '<br />Error: Nothing Found';
+		$error .= "<br /><strong>Nothing Found!</strong>";
 	}
 }
-?>
