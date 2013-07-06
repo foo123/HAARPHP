@@ -31,7 +31,7 @@ class HaarToPhpConverter
     
     public static function toArray($element) 
     {
-        $element = is_string($element) ? htmlspecialchars_decode(trim($element), ENT_QUOTES) : $element;
+        //$element = is_string($element) ? htmlspecialchars_decode(trim($element), ENT_QUOTES) : $element;
         if (!empty($element) && is_object($element)) 
         {
             $element = (array) $element;
@@ -44,7 +44,7 @@ class HaarToPhpConverter
         {
             foreach ($element as $k => $v) 
             {
-                $v = is_string($v) ? htmlspecialchars_decode(trim($v), ENT_QUOTES) : $v;
+                //$v = is_string($v) ? htmlspecialchars_decode(trim($v), ENT_QUOTES) : $v;
                 if (empty($v)) 
                 {
                     $element[$k] = '';
@@ -145,7 +145,7 @@ class HaarToPhpConverter
         //return;
         
         echo('<?php $'.$var_to_use.'=array(');
-		$size = explode(' ', $racine["size"]);
+		$size = explode(' ', trim($racine["size"]));
         echo("'size1'=>".$size[0].",'size2'=>".$size[1]);
         echo(",'stages'=>array(");
 		$i1=0;
