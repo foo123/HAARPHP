@@ -30,9 +30,12 @@ HAARPHP is also part of PHP classes http://www.phpclasses.org/package/7393-PHP-D
 
 ####ChangeLog:
 0.2
+
 * add haartophp tool in php (all-php solution)
 * optimize array operations, refactor, etc..
+
 0.1
+
 * initial release
 
 ####TODO:
