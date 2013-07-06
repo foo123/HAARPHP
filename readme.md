@@ -22,6 +22,12 @@ which you can include in your php application
 the variable to use in php is similarly  
 $haarcascades_frontalface_alt
 
+###Where to find Haar Cascades xml files to use for feature detection
+
+* [OpenCV](http://opencv.org/)
+* [This resource](http://alereimondo.no-ip.org/OpenCV/34)
+* search the web :)
+
 Examples  included with face detection
 
 Complete source code
