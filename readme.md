@@ -5,7 +5,7 @@ based on [Viola-Jones Feature Detection Algorithm using Haar Cascades](http://ww
 This is a port of [OpenCV C++ Haar Detection](http://opencv.willowgarage.com/wiki/) (actually a port of [JViolaJones](http://code.google.com/p/jviolajones/) which is a port of OpenCV for Java)
 to PHP.
 
-You can use the openCV cascades to build your detectors.
+You can use the __existing openCV cascades__ to build your detectors.
 
 To do this just transform the opencv xml file to PHP
 using the haartophp (php or java) tool (in cascades folder)
