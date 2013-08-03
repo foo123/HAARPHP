@@ -10,8 +10,9 @@ This is a port of [OpenCV C++ Haar Detection](http://opencv.willowgarage.com/wik
 
 * [How to Use](#how-to-use)
 * [Haar Cascades](#where-to-find-haar-cascades-xml-files-to-use-for-feature-detection)
-* [Changelog](#changelog)
 * [Known Issues](#known-issues-notes)
+* [Todo](#todo)
+* [Changelog](#changelog)
 
 
 ###How to Use
@@ -45,6 +46,13 @@ __Examples included with face detection__
 * [Train your own](http://docs.opencv.org/doc/user_guide/ug_traincascade.html)
 
 
+####Known Issues / Notes
+cannyPruning seems to fail depending on (a small) image scaling factor (if canny is true)
+
+
+####TODO
+
+
 ####ChangeLog
 
 __0.2__
@@ -54,12 +62,6 @@ __0.2__
 __0.1__
 * initial release
 
-
-####TODO
-
-
-####Known Issues / Notes
-cannyPruning seems to fail depending on (a small) image scaling factor (if canny is true)
 
 
 *Contributor* Nikos M.  
