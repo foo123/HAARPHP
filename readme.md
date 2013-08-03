@@ -6,6 +6,15 @@ Based on [Viola-Jones Feature Detection Algorithm using Haar Cascades](http://ww
 
 This is a port of [OpenCV C++ Haar Detection](http://opencv.willowgarage.com/wiki/) (actually a port of [JViolaJones](http://code.google.com/p/jviolajones/) which is a port of OpenCV for Java) to PHP.
 
+###Contents
+
+* [How to Use](#how-to-use)
+* [Haar Cascades](#where-to-find-haar-cascades-xml-files-to-use-for-feature-detection)
+* [Changelog](#changelog)
+* [Known Issues](#known-issues-notes)
+
+
+###How to Use
 You can use the __existing openCV cascades__ to build your detectors.
 
 To do this just transform the opencv xml file to PHP
@@ -23,6 +32,11 @@ which you can include in your php application
 the variable to use in php is similarly  
 *$haarcascades_frontalface_alt*
 
+__Examples included with face detection__
+
+*HAARPHP* is also part of PHP classes http://www.phpclasses.org/package/7393-PHP-Detect-features-on-images-such-as-faces-or-mouths.html
+
+
 ###Where to find Haar Cascades xml files to use for feature detection
 
 * [OpenCV](http://opencv.org/)
@@ -30,12 +44,9 @@ the variable to use in php is similarly
 * search the web :)
 * [Train your own](http://docs.opencv.org/doc/user_guide/ug_traincascade.html)
 
-__Examples included with face detection__
 
+####ChangeLog
 
-*HAARPHP* is also part of PHP classes http://www.phpclasses.org/package/7393-PHP-Detect-features-on-images-such-as-faces-or-mouths.html
-
-####ChangeLog:
 __0.2__
 * add haartophp tool in php (all-php solution)
 * optimize array operations, refactor, etc..
@@ -43,9 +54,11 @@ __0.2__
 __0.1__
 * initial release
 
+
 ####TODO
 
-####Issues/Notes
+
+####Known Issues / Notes
 cannyPruning seems to fail depending on (a small) image scaling factor (if canny is true)
 
 
