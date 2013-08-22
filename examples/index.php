@@ -9,6 +9,10 @@ require dirname(__FILE__).'/feature_detection.php';
 	    <link rel="stylesheet" type="text/css" href="css.css" />
 	</head>
 	<body>
+        <a href="https://github.com/foo123/HAARPHP">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub">
+        </a>
+        
 		<h1>HAAR Face Detection with PHP GD</h1>
 		<?php if ($error) echo "<p id='error'>$error</p>"; ?>
 		<form method='POST' id='imgForm' enctype='multipart/form-data'>
