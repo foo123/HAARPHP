@@ -1,15 +1,17 @@
 <?php
-global $error, $newImage, $haarcascade_frontalface_alt;
-
-require(dirname(dirname(__FILE__)).'/cascades/haarcascade_frontalface_alt.php');
-require(dirname(dirname(__FILE__)).'/src/haar-detector.class.php');
+error_reporting(E_ALL);
+define('ABSPATH', dirname(dirname(__FILE__)));
+global $error, $origImageHtml, $detectedImageHtml, $haarcascade_frontalface_alt;
+require(ABSPATH.'/cascades/haarcascade_frontalface_alt.php');
+require(ABSPATH.'/src/haar-detector.class.php');
 
 
 /* ------------------------------------------------
 | UPLOAD FORM - validate form and handle submission
 -------------------------------------------------- */
 $error=false;
-$newImage=false;
+$origImageHtml=$detectedImageHtml='';
+$uploadedImage=false;
 
 if (isset($_POST['upload_form_submitted'])) 
 {
@@ -17,75 +19,101 @@ if (isset($_POST['upload_form_submitted']))
     {
 		$error = "<strong>Error:</strong> You didn't upload a file";
 	} 
-    elseif (!isset($_POST['img_name']) || empty($_POST['img_name'])) 
-    {
-		$error = "<strong>Error:</strong> You didn't specify a file name";
-	} 
     else 
     {
-		$allowedExtensions = array('jpg', 'jpeg', 'gif', 'png');
+        $allowedExtensions = array('jpg', 'jpeg', 'gif', 'png');
 		preg_match('/\.('.implode($allowedExtensions, '|').')$/', $_FILES['img_upload']['name'], $fileExt);
-		$newPath = dirname(__FILE__).'/imgs/'.$_POST['img_name'].'.'.$fileExt[1];
         if (!in_array(substr($fileExt[0], 1), $allowedExtensions)) 
         {
 			$error = '<strong>Error:</strong> Invalid file format - please upload a picture file';
 		} 
-		/*elseif (file_exists($newPath)) 
-        {
-			$error = "Error: A file with that name already exists";
-		}*/ 
-        elseif (!copy($_FILES['img_upload']['tmp_name'], $newPath)) 
-        {
-			$error = '<strong>Error:</strong> Could not save file to server';
-		} 
+		$uploadedImage=$_FILES['img_upload']['tmp_name'];
 	}
 }
 
 
-/* -----------------
-| CROP saved image
------------------ */
-if (isset($_POST['upload_form_submitted']) && !$error) 
+if ($uploadedImage && !$error) 
 {
 
+    // read image
 	switch($fileExt[1]) 
     {
 		case 'jpg': 
         case 'jpeg':
-			$source_img = imagecreatefromjpeg($newPath);
+			$origImage = imagecreatefromjpeg($uploadedImage);
 			break;
 		case 'gif':
-			$source_img = imagecreatefromgif($newPath);
+			$origImage = imagecreatefromgif($uploadedImage);
 			break;
 		case 'png':
-			$source_img = imagecreatefrompng($newPath);
+			$origImage = imagecreatefrompng($uploadedImage);
 			break;
 	}
     
-	$facedetector=HAARDetector::getDetector($haarcascade_frontalface_alt);
-    $foundsth=$facedetector
-            // cannyPruning sometimes depends on the image scaling, small image scaling seems to make canny pruning fail (if canny is true)
-            ->setImage($source_img, 0.25)
-            ->detect(1, 1.25, 0.1, 1, false);
+    // detect face/feature
+    $faceDetector=HAARDetector::getDetector($haarcascade_frontalface_alt);
+    // cannyPruning sometimes depends on the image scaling, small image scaling seems to make canny pruning fail (if doCannyPruning is true)
+    // optionally different canny thresholds can be set to overcome this limitation
+    $found=$faceDetector->image($origImage, 0.4)->detect(1, 1.25, 0.1, 1, true);
 	
-    if ($foundsth)
+    // if detected
+    if ($found)
 	{
-		$found=$facedetector->objects[0]; // take first found feature
-		$dest_img = imagecreatetruecolor($found['width'], $found['height']);
-		imagecopy($dest_img, $source_img, 0, 0, $found['x'], $found['y'], $found['width'], $found['height']);
-		switch($fileExt[1]) 
+		$feature=$faceDetector->objects[0]; // take first found feature
+		// create feature image from original image
+        $detectedImage = imagecreatetruecolor($feature->width, $feature->height);
+		imagecopy($detectedImage, $origImage, 0, 0, $feature->x, $feature->y, $feature->width, $feature->height);
+		
+        // display images
+        switch($fileExt[1]) 
         {
 			case 'jpg': case 'jpeg':
-				imagejpeg($dest_img, $newPath); break;
+				ob_start();
+                imagejpeg($origImage);
+                $origImageHtml='<img src="data:image/jpeg;base64,' . base64_encode(ob_get_clean()) . '" />';
+				ob_start();
+                imagejpeg($detectedImage);
+                $detectedImageHtml='<img src="data:image/jpeg;base64,' . base64_encode(ob_get_clean()) . '" />';
+                break;
 			case 'gif':
-				imagegif($dest_img, $newPath); break;
+				ob_start();
+                imagegif($origImage);
+                $origImageHtml='<img src="data:image/gif;base64,' . base64_encode(ob_get_clean()) . '" />';
+				ob_start();
+                imagegif($detectedImage);
+                $detectedImageHtml='<img src="data:image/gif;base64,' . base64_encode(ob_get_clean()) . '" />';
+                break;
 			case 'png':
-				imagepng($dest_img, $newPath); break;
+				ob_start();
+                imagepng($origImage);
+                $origImageHtml='<img src="data:image/png;base64,' . base64_encode(ob_get_clean()) . '" />';
+				ob_start();
+                imagepng($detectedImage);
+                $detectedImageHtml='<img src="data:image/png;base64,' . base64_encode(ob_get_clean()) . '" />';
+                break;
 		}
-        $newImage='imgs/'.$_POST['img_name'].'.'.$fileExt[1];
 	}
 	else
 	{
 		$error .= "<br /><strong>Nothing Found!</strong>";
+        // display image
+		switch($fileExt[1]) 
+        {
+			case 'jpg': case 'jpeg':
+				ob_start();
+                imagejpeg($origImage);
+                $origImageHtml='<img src="data:image/jpeg;base64,' . base64_encode(ob_get_clean()) . '" />';
+                break;
+			case 'gif':
+				ob_start();
+                imagegif($origImage);
+                $origImageHtml='<img src="data:image/gif;base64,' . base64_encode(ob_get_clean()) . '" />';
+                break;
+			case 'png':
+				ob_start();
+                imagepng($origImage);
+                $origImageHtml='<img src="data:image/png;base64,' . base64_encode(ob_get_clean()) . '" />';
+                break;
+		}
 	}
 }

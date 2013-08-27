@@ -1,7 +1,4 @@
-<?php 
-error_reporting(E_ALL);
-require dirname(__FILE__).'/feature_detection.php'; 
-?>
+<?php require dirname(__FILE__).'/feature_detection.php'; ?>
 <!DOCTYPE html>
 <html>
 	<head>
@@ -18,13 +15,11 @@ require dirname(__FILE__).'/feature_detection.php';
 		<form method='POST' id='imgForm' enctype='multipart/form-data'>
 			<label for='img_upload'>Image File: </label>
 			<input type='file' name='img_upload' id='img_upload'>
-			<label for='img_name'>Image Name: </label>
-			<input type='text' name='img_name' id='img_name'>
 			<input type='submit' value="Upload and Detect" name='upload_form_submitted'>
 		</form>
-		<?php if ($newImage) { ?>
-			<h2>Detected Features</h2>
-			<img id='uploaded_image' src='<?php echo $newImage.'?'.rand(0, 100000); ?>' />
-		<?php } ?>
+        <h2>Original Image</h2>
+        <?php echo $origImageHtml; ?>
+        <h2>Detected Features</h2>
+        <?php echo $detectedImageHtml; ?>
 	</body>
 </html>
