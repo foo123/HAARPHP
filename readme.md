@@ -89,7 +89,7 @@ The actual selection rectangle/feature is available as $this->Selection or detec
 
 __cannyThreshold()__
 ```php
-detector->cannyThreshold(array('low'=> lowThreshold, 'high'=> highThreshold});
+detector->cannyThreshold(array('low'=> lowThreshold, 'high'=> highThreshold));
 ```
 
 Set the thresholds when Canny Pruning is used, for extra fine-tuning. 
@@ -147,6 +147,7 @@ __0.3__
 * rewrite _merge_ method (features might be slightly different now)
 * features are now generic classes not arrays
 * code refactor/fixes
+* update readme, add method documentation
 
 __0.2__
 * add haartophp tool in php (all-php solution)
