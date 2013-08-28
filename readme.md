@@ -22,7 +22,7 @@ This is a port of [OpenCV C++ Haar Detection](http://opencv.willowgarage.com/wik
 You can use the __existing openCV cascades__ to build your detectors.
 
 To do this just transform the opencv xml file to PHP
-using the haartophp (php or java) tool (in cascades folder)
+using the haartophp (php ~~or java~~) tool (in cascades folder)
 
 example:
 ( to use opencv's haarcascades_frontalface_alt.xml  run following command)
