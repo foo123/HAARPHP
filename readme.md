@@ -1,5 +1,8 @@
 # HAARPHP 
 
+## Further development on this project has stopped!!
+
+
 __Feature Detection Library for PHP__
 
 Based on [Viola-Jones Feature Detection Algorithm using Haar Cascades](http://www.cs.cmu.edu/~efros/courses/LBMV07/Papers/viola-cvpr-01.pdf)
