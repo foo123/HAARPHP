@@ -106,7 +106,7 @@ class HAARDetector
         return $this;
     }
     
-    // customize canny prunign thresholds for best results
+    // customize canny pruning thresholds for best results
     public function cannyThreshold($thres) 
     {
         if ($thres && is_array($thres))
@@ -135,8 +135,7 @@ class HAARDetector
     }
     
     // Detector detect method to start detection
-    // NOTE: currently cannyPruning does not give expected results (so use false in detect method) (maybe fix in the future)
-    public function detect($baseScale=1.0, $scale_inc=1.25, $increment=0.5, $min_neighbors=1, $doCannyPruning=false)
+    public function detect($baseScale=1.0, $scale_inc=1.25, $increment=0.5, $min_neighbors=1, $doCannyPruning=true)
     {
         if (!$this->Selection) $this->Selection = new HAARFeature(0, 0, $this->origWidth, $this->origHeight);
         
@@ -186,7 +185,7 @@ class HAARDetector
             $this->objects=array();
             $gfound = false;
         }
-        //$ret=null; unset($ret);
+        $ret=null; unset($ret);
         
         return $gfound;  // returns true/false whether found at least sth
     }
@@ -195,7 +194,6 @@ class HAARDetector
     {
         $ret = array();
         $haar =& $this->haardata;
-        //$scaledSelection = $this->scaledSelection;
         $imArea = $w*$h; $imArea1 = $imArea-1;
         
         $canny =& $this->canny; 
@@ -302,8 +300,8 @@ class HAARDetector
                                     $y3 = ($y3<$by1) ? $by1 : (($y3>$by2) ? $by2 : $y3);
                                     $y4 = ($y4<$by1) ? $by1 : (($y4>$by2) ? $by2 : $y4);
                                     
-                                    // RSAT(x–h+w,y+w+h–1)+RSAT(x,y–1)–RSAT(x–h,y+h–1)–RSAT(x+w,y+w–1)
-                                    //      x4     y4           x1  y1      x3   y3          x2  y2
+                                    // RSAT(x-h+w, y+w+h-1) + RSAT(x, y-1) - RSAT(x-h, y+h-1) - RSAT(x+w, y+w-1)
+                                    //        x4     y4            x1  y1          x3   y3            x2   y2
                                     $rect_sum+= $r[4] * ($tilted[$x4 + $y4] - $tilted[$x3 + $y3] - $tilted[$x2 + $y2] + $tilted[$x1 + $y1]);
                                 }
                             }
@@ -326,8 +324,8 @@ class HAARDetector
                                     $y1 = ($y1<$by1) ? $by1 : (($y1>$by2) ? $by2 : $y1);
                                     $y2 = ($y2<$by1) ? $by1 : (($y2>$by2) ? $by2 : $y2);
                                     
-                                    // SAT(x–1,y–1)+SAT(x+w–1,y+h–1)–SAT(x–1,y+h–1)–SAT(x+w–1,y–1)
-                                    //     x1  y1        x2    y2         x1  y2         x2   y1
+                                    // SAT(x-1, y-1) + SAT(x+w-1, y+h-1) - SAT(x-1, y+h-1) - SAT(x+w-1, y-1)
+                                    //      x1   y1         x2      y2          x1   y1            x2    y1
                                     $rect_sum+= $r[4] * ($integral[$x2 + $y2]  - $integral[$x1 + $y2] - $integral[$x2 + $y1] + $integral[$x1 + $y1]);
                                 }
                             }
@@ -393,11 +391,11 @@ class HAARDetector
             $sum += $g;  
             $sum2 += $g*$g;
             
-            // SAT(–1,y)=SAT(x,–1)=SAT(–1,–1)=0
-            // SAT(x,y)=SAT(x,y–1)+SAT(x–1,y)+I(x,y)–SAT(x–1,y–1)  <-- integral image
+            // SAT(-1, y) = SAT(x, -1) = SAT(-1, -1) = 0
+            // SAT(x, y) = SAT(x, y-1) + SAT(x-1, y) + I(x, y) - SAT(x-1, y-1)  <-- integral image
             
-            // RSAT(–1,y)=RSAT(x,–1)=RSAT(x,–2)=0 RSAT(–1,–1)=RSAT(–1,–2)=0
-            // RSAT(x,y)=RSAT(x–1,y–1)+RSAT(x+1,y–1)–RSAT(x,y–2)+I(x,y)+I(x,y–1) <-- rotated(tilted) integral image at 45deg
+            // RSAT(-1, y) = RSAT(x, -1) = RSAT(x, -2) = RSAT(-1, -1) = RSAT(-1, -2) = 0
+            // RSAT(x, y) = RSAT(x-1, y-1) + RSAT(x+1, y-1) - RSAT(x, y-2) + I(x, y) + I(x, y-1)    <-- rotated(tilted) integral image at 45deg
             $gray[$i] = $g;
             $integral[$i] = $sum;
             $squares[$i] = $sum2;
@@ -419,11 +417,11 @@ class HAARDetector
             $sum += $g;  
             $sum2 += $g*$g;
             
-            // SAT(–1,y)=SAT(x,–1)=SAT(–1,–1)=0
-            // SAT(x,y)=SAT(x,y–1)+SAT(x–1,y)+I(x,y)–SAT(x–1,y–1)  <-- integral image
+            // SAT(-1, y) = SAT(x, -1) = SAT(-1, -1) = 0
+            // SAT(x, y) = SAT(x, y-1) + SAT(x-1, y) + I(x, y) - SAT(x-1, y-1)  <-- integral image
             
-            // RSAT(–1,y)=RSAT(x,–1)=RSAT(x,–2)=0 RSAT(–1,–1)=RSAT(–1,–2)=0
-            // RSAT(x,y)=RSAT(x–1,y–1)+RSAT(x+1,y–1)–RSAT(x,y–2)+I(x,y)+I(x,y–1) <-- rotated(tilted) integral image at 45deg
+            // RSAT(-1, y) = RSAT(x, -1) = RSAT(x, -2) = RSAT(-1, -1) = RSAT(-1, -2) = 0
+            // RSAT(x, y) = RSAT(x-1, y-1) + RSAT(x+1, y-1) - RSAT(x, y-2) + I(x, y) + I(x, y-1)    <-- rotated(tilted) integral image at 45deg
             $gray[$k] = $g;
             $integral[$k] = $integral[$k-$w] + $sum;
             $squares[$k] = $squares[$k-$w] + $sum2;
