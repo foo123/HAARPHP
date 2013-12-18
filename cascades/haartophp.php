@@ -45,7 +45,7 @@ class HaarToPhpConverter
      * @author              Patrick Fisher <patrick@pwfisher.com>
      * @see                 https://github.com/pwfisher/CommandLine.php
      */
-    protected function parseArgs($argv = null) 
+    protected static function parseArgs($argv = null) 
     {
         $argv = $argv ? $argv : $_SERVER['argv']; array_shift($argv); $o = array();
         for ($i = 0, $j = count($argv); $i < $j; $i++) 
@@ -254,31 +254,31 @@ class HaarToPhpConverter
                             $thres2=(isset($feature["threshold"])) ? $feature["threshold"] : 0;
                             $left_node="-1";
                             $left_val = "0";
-                            $has_left_val ="false";
+                            $has_left_val ="0";
                             $right_node="-1";
                             $right_val = "0";
-                            $has_right_val ="false";
+                            $has_right_val ="0";
                             $e;
                             if(isset($feature["left_val"]))
                             {
                                 $left_val=$feature["left_val"];
-                                $has_left_val="true";
+                                $has_left_val="1";
                             }
                             else
                             {
                                 $left_node=$feature["left_node"];
-                                $has_left_val="false";
+                                $has_left_val="0";
                             }
 
                             if(isset($feature["right_val"]))
                             {
                                 $right_val=$feature["right_val"];
-                                $has_right_val="true";
+                                $has_right_val="1";
                             }
                             else
                             {
                                 $right_node=$feature["right_node"];
-                                $has_right_val="false";
+                                $has_right_val="0";
                             }
                             echo("'thres'=>".$thres2);
                             echo(",'has_l'=>".$has_left_val.",'l_val'=>".$left_val.",'l_node'=>".$left_node);
@@ -292,7 +292,7 @@ class HaarToPhpConverter
                             }
                             else
                             {
-                                echo(",'tilt'=>null");
+                                echo(",'tilt'=>0");
                             }
                             echo(",'rects'=>array(");
                             if (isset($feature['feature']['rects']['_']))
