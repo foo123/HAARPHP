@@ -1,6 +1,6 @@
 # HAARPHP 
 
-## Further development on this project has stopped!!
+### Further development on this project has stopped!!
 
 
 __Feature Detection Library for PHP__
