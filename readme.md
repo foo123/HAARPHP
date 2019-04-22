@@ -14,7 +14,7 @@ This is a port of [OpenCV C++ Haar Detection](http://opencv.org/) (actually a po
 ![screenshot](/example-screenshot.png)
 
 
-###Contents
+### Contents
 
 * [How to Use](#how-to-use)
 * [Haar Cascades](#where-to-find-haar-cascades-xml-files-to-use-for-feature-detection)
@@ -22,7 +22,7 @@ This is a port of [OpenCV C++ Haar Detection](http://opencv.org/) (actually a po
 * [Changelog](#changelog)
 
 
-###How to Use
+### How to Use
 You can use the __existing openCV cascades__  to build your detectors.
 
 To do this just transform the __opencv xml file__ to *PHP* format
@@ -62,7 +62,7 @@ This is now incorporated into HAARPHP and this increases the compatibility
 with the OpenCV cascades (when they use tilted features, eg mouth cascade)
 
 
-####Detector Methods
+#### Detector Methods
 
 __constructor()__
 ```php
@@ -164,7 +164,7 @@ __Examples included with face detection__
 *HAARPHP* is also part of PHP classes http://www.phpclasses.org/package/7393-PHP-Detect-features-on-images-such-as-faces-or-mouths.html
 
 
-###Where to find Haar Cascades xml files to use for feature detection
+### Where to find Haar Cascades xml files to use for feature detection
 
 * [OpenCV](http://opencv.org/)
 * [This resource](http://alereimondo.no-ip.org/OpenCV/34)
@@ -172,11 +172,11 @@ __Examples included with face detection__
 * [Train your own](http://docs.opencv.org/doc/user_guide/ug_traincascade.html) with a little extra help [here](http://note.sonots.com/SciSoftware/haartraining.html) and [here](http://coding-robin.de/2013/07/22/train-your-own-opencv-haar-classifier.html)
 
 
-####TODO
+#### TODO
 - [ ] keep up with the changes in openCV cascades xml format (will try)
 
 
-####ChangeLog
+#### ChangeLog
 
 __0.4__
 * refactor code (make smaller)
@@ -208,6 +208,8 @@ __0.1__
 * initial release
 
 
+<!--
 *URL* [Nikos Web Development](http://nikos-web-development.netai.net/ "Nikos Web Development")  
 *URL* [Haar.php blog post](http://nikos-web-development.netai.net/blog/haarphp-feature-detection-with-haar-cascades-in-php/ "Haar.php blog post")  
 *URL* [WorkingClassCode](http://workingclasscode.uphero.com/ "Working Class Code")  
+-->
