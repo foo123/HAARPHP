@@ -9,6 +9,9 @@ and improvement [Viola-Jones-Lienhart et al Feature Detection Algorithm](http://
 This is a port of [OpenCV `C++` Haar Detection](http://opencv.org/) (actually a port of [JViolaJones](http://code.google.com/p/jviolajones/) which is a port of OpenCV for `Java`) to `PHP`
 
 
+**there is also a [`javascript` version: HAAR.js](https://github.com/foo123/HAAR.js)**
+
+
 ![screenshot](/example-screenshot.png)
 
 
