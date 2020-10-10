@@ -6,7 +6,7 @@ define('ABSPATH', dirname(dirname(__FILE__)));
 global $error, $origImageHtml, $numFeatures, $detectedImageHtml, $haarcascade_frontalface_alt;
 
 require(ABSPATH.'/cascades/haarcascade_frontalface_alt.php');
-require(ABSPATH.'/src/haar-detector.class.php');
+require(ABSPATH.'/src/HaarDetector.php');
 
 
 /* ------------------------------------------------
@@ -56,7 +56,7 @@ if ($uploadedImage && !$error)
     }
     
     // detect face/feature
-    $faceDetector = HAARDetector::getDetector($haarcascade_frontalface_alt);
+    $faceDetector = new HaarDetector($haarcascade_frontalface_alt);
     // cannyPruning sometimes depends on the image scaling, small image scaling seems to make canny pruning fail (if doCannyPruning is true)
     // optionally different canny thresholds can be set to overcome this limitation
     $found = $faceDetector
