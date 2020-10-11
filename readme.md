@@ -159,6 +159,10 @@ __Examples included with face detection__
 
 #### ChangeLog
 
+__1.0.1__
+* inline detection routine for further speed
+* update test examples with many faces detection
+
 __1.0.0__
 * correct detection on custom selection
 * refactor code

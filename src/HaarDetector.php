@@ -5,15 +5,15 @@
 * modified port of jViolaJones for Java (http://code.google.com/p/jviolajones/) to PHP
 *
 * https://github.com/foo123/HAARPHP
-* @version: 1.0.0
+* @version: 1.0.1
 *
 **/
 
-if (!class_exists('HaarDetector'))
+if (! class_exists('HaarDetector'))
 {
 class HaarDetector
 {
-    CONST  VERSION = "1.0.0";
+    CONST  VERSION = "1.0.1";
 
     public $haardata = null;
     public $objects = null;
@@ -121,7 +121,7 @@ class HaarDetector
     // Detector detect method to start detection
     public function detect($baseScale = 1.0, $scale_inc = 1.25, $increment = 0.5, $min_neighbors = 1, $doCannyPruning = true)
     {
-        if (!$this->origSelection)
+        if (! $this->origSelection)
             $this->origSelection = new HaarFeature(0, 0, $this->origWidth, $this->origHeight);
 
         $this->origSelection->x = 'auto' === $this->origSelection->x ? 0 : $this->origSelection->x;
@@ -131,17 +131,216 @@ class HaarDetector
 
         $this->scaledSelection = $this->origSelection->clone()->scale($this->ratio)->round();
 
-        $sizex = intval($this->haardata['size1']);
-        $sizey = intval($this->haardata['size2']);
+        $haar =& $this->haardata;
+        $haar_stages = $haar['stages'];
+
+        $canny =& $this->canny;
+        $integral =& $this->integral;
+        $squares =& $this->squares;
+        $tilted =& $this->tilted;
+
+        $w = $this->width;
+        $h = $this->height;
+
+        $startx = $this->scaledSelection->x;
+        $starty = $this->scaledSelection->y;
+        $selw = $this->scaledSelection->width;
+        $selh = $this->scaledSelection->height;
+        $imArea = $w * $h;
+        $imArea1 = $imArea - 1;
+        $sizex = intval($haar['size1']);
+        $sizey = intval($haar['size2']);
+
         $maxScale = min($this->scaledSelection->width/$sizex, $this->scaledSelection->height/$sizey);
         $scale = $baseScale;
 
+        $sl = count($haar_stages);
+        $cL = $this->cannyLow;
+        $cH = $this->cannyHigh;
+
+        $bx1 = 0;
+        $bx2 = $w - 1;
+        $by1 = 0;
+        $by2 = $imArea - $w;
+
         $ret = array();
 
-        // detect loop
+        // main detect loop
         while ($scale <= $maxScale)
         {
-            $ret = array_merge($ret, $this->detectSingleStep($scale, $increment, $doCannyPruning));
+            $xsize = floor($scale * $sizex);
+            $xstep = floor($xsize * $increment);
+            $ysize = floor($scale * $sizey);
+            $ystep = floor($ysize * $increment);
+            $tyw = $ysize * $w;
+            $tys = $ystep * $w;
+            $startty = $starty * $tys;
+            $xl = $selw - $xsize;
+            $yl = $selh - $ysize;
+            $swh = $xsize * $ysize;
+
+            for ($y = $starty, $ty = $startty; $y < $yl; $y += $ystep, $ty += $tys)
+            {
+                for ($x = $startx; $x < $xl; $x += $xstep)
+                {
+                    $p0 = $x - 1 + $ty - $w;
+                    $p1 = $p0 + $xsize;
+                    $p2 = $p0 + $tyw;
+                    $p3 = $p2 + $xsize;
+
+                    // clamp
+                    $p0 = $p0 < 0 ? 0 : ($p0 > $imArea1 ? $imArea1 : $p0);
+                    $p1 = $p1 < 0 ? 0 : ($p1 > $imArea1 ? $imArea1 : $p1);
+                    $p2 = $p2 < 0 ? 0 : ($p2 > $imArea1 ? $imArea1 : $p2);
+                    $p3 = $p3 < 0 ? 0 : ($p3 > $imArea1 ? $imArea1 : $p3);
+
+                    if ($doCannyPruning)
+                    {
+                        // avoid overflow
+                        $edges_density = ($canny[$p3] - $canny[$p2] - $canny[$p1] + $canny[$p0]) / $swh;
+                        if ($edges_density < $cL || $edges_density > $cH) continue;
+                    }
+
+                    // pre-compute some values for speed
+
+                    // avoid overflow
+                    $total_x = ($integral[$p3] - $integral[$p2] - $integral[$p1] + $integral[$p0]) / $swh;
+                    // avoid overflow
+                    $total_x2 = ($squares[$p3] - $squares[$p2] - $squares[$p1] + $squares[$p0]) / $swh;
+
+                    $vnorm = $total_x2 - $total_x * $total_x;
+                    $vnorm = $vnorm > 1 ? sqrt($vnorm) : /*$vnorm*/  1;
+
+                    $pass = true;
+                    for ($s = 0; $s < $sl; $s++)
+                    {
+                        // Viola-Jones HAAR-Stage evaluator
+                        $stage =& $haar_stages[$s];
+                        $threshold = $stage['thres'];
+                        $trees =& $stage['trees'];
+                        $tl = count($trees);
+                        $sum = 0;
+
+                        for ($t = 0; $t < $tl; $t++)
+                        {
+                            //
+                            // inline the tree and leaf evaluators to avoid function calls per-loop (faster)
+                            //
+
+                            // Viola-Jones HAAR-Tree evaluator
+                            $features =& $trees[$t]['feats'];
+                            $cur_node_ind = 0;
+                            while (true)
+                            {
+                                $feature =& $features[$cur_node_ind];
+
+                                // Viola-Jones HAAR-Leaf evaluator
+                                $rects =& $feature['rects'];
+                                $nb_rects = count($rects);
+                                $thresholdf = $feature['thres'];
+                                $rect_sum = 0;
+
+                                if (!empty($feature['tilt']))
+                                {
+                                    // tilted rectangle feature, Lienhart et al. extension
+                                    for ($kr = 0; $kr < $nb_rects; $kr++)
+                                    {
+                                        $r =& $rects[$kr];
+
+                                        // this produces better/larger features, possible rounding effects??
+                                        $x1 = $x + floor($scale * $r[0]);
+                                        $y1 = ($y - 1 + floor($scale * $r[1])) * $w;
+                                        $x2 = $x + floor($scale * ($r[0] + $r[2]));
+                                        $y2 = ($y - 1 + floor($scale * ($r[1] + $r[2]))) * $w;
+                                        $x3 = $x + floor($scale * ($r[0] - $r[3]));
+                                        $y3 = ($y - 1 + floor($scale * ($r[1] + $r[3]))) * $w;
+                                        $x4 = $x + floor($scale * ($r[0] + $r[2] - $r[3]));
+                                        $y4 = ($y - 1 + floor($scale * ($r[1] + $r[2] + $r[3]))) * $w;
+
+                                        // clamp
+                                        $x1 = $x1 < $bx1 ? $bx1 : ($x1 > $bx2 ? $bx2 : $x1);
+                                        $x2 = $x2 < $bx1 ? $bx1 : ($x2 > $bx2 ? $bx2 : $x2);
+                                        $x3 = $x3 < $bx1 ? $bx1 : ($x3 > $bx2 ? $bx2 : $x3);
+                                        $x4 = $x4 < $bx1 ? $bx1 : ($x4 > $bx2 ? $bx2 : $x4);
+                                        $y1 = $y1 < $by1 ? $by1 : ($y1 > $by2 ? $by2 : $y1);
+                                        $y2 = $y2 < $by1 ? $by1 : ($y2 > $by2 ? $by2 : $y2);
+                                        $y3 = $y3 < $by1 ? $by1 : ($y3 > $by2 ? $by2 : $y3);
+                                        $y4 = $y4 < $by1 ? $by1 : ($y4 > $by2 ? $by2 : $y4);
+
+                                        // RSAT(x-h+w, y+w+h-1) + RSAT(x, y-1) - RSAT(x-h, y+h-1) - RSAT(x+w, y+w-1)
+                                        //        x4     y4            x1  y1          x3   y3            x2   y2
+                                        $rect_sum += $r[4] * ($tilted[$x4 + $y4] - $tilted[$x3 + $y3] - $tilted[$x2 + $y2] + $tilted[$x1 + $y1]);
+                                    }
+                                }
+                                else
+                                {
+                                    // orthogonal rectangle feature, Viola-Jones original
+                                    for ($kr = 0; $kr < $nb_rects; $kr++)
+                                    {
+                                        $r =& $rects[$kr];
+
+                                        // this produces better/larger features, possible rounding effects??
+                                        $x1 = $x - 1 + floor($scale * $r[0]);
+                                        $x2 = $x - 1 + floor($scale * ($r[0] + $r[2]));
+                                        $y1 = $w * ($y - 1 + floor($scale * $r[1]));
+                                        $y2 = $w * ($y - 1 + floor($scale * ($r[1] + $r[3])));
+
+                                        // clamp
+                                        $x1 = $x1 < $bx1 ? $bx1 : ($x1 > $bx2 ? $bx2 : $x1);
+                                        $x2 = $x2 < $bx1 ? $bx1 : ($x2 > $bx2 ? $bx2 : $x2);
+                                        $y1 = $y1 < $by1 ? $by1 : ($y1 > $by2 ? $by2 : $y1);
+                                        $y2 = $y2 < $by1 ? $by1 : ($y2 > $by2 ? $by2 : $y2);
+
+                                        // SAT(x-1, y-1) + SAT(x+w-1, y+h-1) - SAT(x-1, y+h-1) - SAT(x+w-1, y-1)
+                                        //      x1   y1         x2      y2          x1   y1            x2    y1
+                                        $rect_sum += $r[4] * ($integral[$x2 + $y2]  - $integral[$x1 + $y2] - $integral[$x2 + $y1] + $integral[$x1 + $y1]);
+                                    }
+                                }
+
+                                $where = $rect_sum / $swh < $thresholdf * $vnorm ? 0 : 1;
+                                // END Viola-Jones HAAR-Leaf evaluator
+
+                                if ($where)
+                                {
+                                    if (!empty($feature['has_r']))
+                                    {
+                                        $sum += $feature['r_val'];
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        $cur_node_ind = $feature['r_node'];
+                                    }
+                                }
+                                else
+                                {
+                                    if (!empty($feature['has_l']))
+                                    {
+                                        $sum += $feature['l_val'];
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        $cur_node_ind = $feature['l_node'];
+                                    }
+                                }
+                            }
+                            // END Viola-Jones HAAR-Tree evaluator
+
+                        }
+                        $pass = $sum > $threshold;
+                        // END Viola-Jones HAAR-Stage evaluator
+
+                        if (! $pass) break;
+                    }
+
+                    if ($pass)
+                    {
+                        $ret[] = new HaarFeature($x, $y, $xsize, $ysize);
+                    }
+                }
+            }
+
             $scale *= $scale_inc;
         }
 
@@ -156,215 +355,6 @@ class HaarDetector
         }
 
         return 0 < count($this->objects);
-    }
-
-    private function detectSingleStep($scale, $increment, $doCanny)
-    {
-        $ret = array();
-        $haar =& $this->haardata;
-        $haar_stages = $haar['stages'];
-
-        $canny =& $this->canny;
-        $integral =& $this->integral;
-        $squares =& $this->squares;
-        $tilted =& $this->tilted;
-
-        $w = $this->width;
-        $h = $this->height;
-
-        $selw = $this->scaledSelection->width;
-        $selh = $this->scaledSelection->height;
-        $imArea = $w * $h;
-        $imArea1 = $imArea - 1;
-        $sizex = $haar['size1'];
-        $sizey = $haar['size2'];
-        $startx = $this->scaledSelection->x;
-        $starty = $this->scaledSelection->y;
-        $sl = count($haar_stages);
-        $cL = $this->cannyLow;
-        $cH = $this->cannyHigh;
-
-        $bx1 = 0;
-        $bx2 = $w - 1;
-        $by1 = 0;
-        $by2 = $imArea - $w;
-
-        $xsize = floor($scale * $sizex);
-        $xstep = floor($xsize * $increment);
-        $ysize = floor($scale * $sizey);
-        $ystep = floor($ysize * $increment);
-        $tyw = $ysize * $w;
-        $tys = $ystep * $w;
-        $startty = $starty * $tys;
-        $xl = $selw - $xsize;
-        $yl = $selh - $ysize;
-        $swh = $xsize * $ysize;
-        $inv_area = 1.0 / $swh;
-
-        for ($y = $starty, $ty = $startty; $y < $yl; $y += $ystep, $ty += $tys)
-        {
-            for ($x = $startx; $x < $xl; $x += $xstep)
-            {
-                $p0 = $x - 1 + $ty - $w;
-                $p1 = $p0 + $xsize;
-                $p2 = $p0 + $tyw;
-                $p3 = $p2 + $xsize;
-
-                // clamp
-                $p0 = $p0 < 0 ? 0 : ($p0 > $imArea1 ? $imArea1 : $p0);
-                $p1 = $p1 < 0 ? 0 : ($p1 > $imArea1 ? $imArea1 : $p1);
-                $p2 = $p2 < 0 ? 0 : ($p2 > $imArea1 ? $imArea1 : $p2);
-                $p3 = $p3 < 0 ? 0 : ($p3 > $imArea1 ? $imArea1 : $p3);
-
-                if ($doCanny)
-                {
-                    // avoid overflow
-                    $edges_density = ($canny[$p3] - $canny[$p2] - $canny[$p1] + $canny[$p0]) / $swh;
-                    if ($edges_density < $cL || $edges_density > $cH) continue;
-                }
-
-                // pre-compute some values for speed
-
-                // avoid overflow
-                $total_x = ($integral[$p3] - $integral[$p2] - $integral[$p1] + $integral[$p0]) / $swh;
-                // avoid overflow
-                $total_x2 = ($squares[$p3] - $squares[$p2] - $squares[$p1] + $squares[$p0]) / $swh;
-
-                $vnorm = $total_x2 - $total_x * $total_x;
-                $vnorm = $vnorm > 1 ? sqrt($vnorm) : /*$vnorm*/  1;
-
-                $pass = true;
-                for ($s = 0; $s < $sl; $s++)
-                {
-                    // Viola-Jones HAAR-Stage evaluator
-                    $stage =& $haar_stages[$s];
-                    $threshold = $stage['thres'];
-                    $trees =& $stage['trees'];
-                    $tl = count($trees);
-                    $sum = 0;
-
-                    for ($t = 0; $t < $tl; $t++)
-                    {
-                        //
-                        // inline the tree and leaf evaluators to avoid function calls per-loop (faster)
-                        //
-
-                        // Viola-Jones HAAR-Tree evaluator
-                        $features =& $trees[$t]['feats'];
-                        $cur_node_ind = 0;
-                        while (true)
-                        {
-                            $feature =& $features[$cur_node_ind];
-
-                            // Viola-Jones HAAR-Leaf evaluator
-                            $rects =& $feature['rects'];
-                            $nb_rects = count($rects);
-                            $thresholdf = $feature['thres'];
-                            $rect_sum = 0;
-
-                            if (!empty($feature['tilt']))
-                            {
-                                // tilted rectangle feature, Lienhart et al. extension
-                                for ($kr = 0; $kr < $nb_rects; $kr++)
-                                {
-                                    $r =& $rects[$kr];
-
-                                    // this produces better/larger features, possible rounding effects??
-                                    $x1 = $x + floor($scale * $r[0]);
-                                    $y1 = ($y - 1 + floor($scale * $r[1])) * $w;
-                                    $x2 = $x + floor($scale * ($r[0] + $r[2]));
-                                    $y2 = ($y - 1 + floor($scale * ($r[1] + $r[2]))) * $w;
-                                    $x3 = $x + floor($scale * ($r[0] - $r[3]));
-                                    $y3 = ($y - 1 + floor($scale * ($r[1] + $r[3]))) * $w;
-                                    $x4 = $x + floor($scale * ($r[0] + $r[2] - $r[3]));
-                                    $y4 = ($y - 1 + floor($scale * ($r[1] + $r[2] + $r[3]))) * $w;
-
-                                    // clamp
-                                    $x1 = $x1 < $bx1 ? $bx1 : ($x1 > $bx2 ? $bx2 : $x1);
-                                    $x2 = $x2 < $bx1 ? $bx1 : ($x2 > $bx2 ? $bx2 : $x2);
-                                    $x3 = $x3 < $bx1 ? $bx1 : ($x3 > $bx2 ? $bx2 : $x3);
-                                    $x4 = $x4 < $bx1 ? $bx1 : ($x4 > $bx2 ? $bx2 : $x4);
-                                    $y1 = $y1 < $by1 ? $by1 : ($y1 > $by2 ? $by2 : $y1);
-                                    $y2 = $y2 < $by1 ? $by1 : ($y2 > $by2 ? $by2 : $y2);
-                                    $y3 = $y3 < $by1 ? $by1 : ($y3 > $by2 ? $by2 : $y3);
-                                    $y4 = $y4 < $by1 ? $by1 : ($y4 > $by2 ? $by2 : $y4);
-
-                                    // RSAT(x-h+w, y+w+h-1) + RSAT(x, y-1) - RSAT(x-h, y+h-1) - RSAT(x+w, y+w-1)
-                                    //        x4     y4            x1  y1          x3   y3            x2   y2
-                                    $rect_sum += $r[4] * ($tilted[$x4 + $y4] - $tilted[$x3 + $y3] - $tilted[$x2 + $y2] + $tilted[$x1 + $y1]);
-                                }
-                            }
-                            else
-                            {
-                                // orthogonal rectangle feature, Viola-Jones original
-                                for ($kr = 0; $kr < $nb_rects; $kr++)
-                                {
-                                    $r =& $rects[$kr];
-
-                                    // this produces better/larger features, possible rounding effects??
-                                    $x1 = $x - 1 + floor($scale * $r[0]);
-                                    $x2 = $x - 1 + floor($scale * ($r[0] + $r[2]));
-                                    $y1 = $w * ($y - 1 + floor($scale * $r[1]));
-                                    $y2 = $w * ($y - 1 + floor($scale * ($r[1] + $r[3])));
-
-                                    // clamp
-                                    $x1 = $x1 < $bx1 ? $bx1 : ($x1 > $bx2 ? $bx2 : $x1);
-                                    $x2 = $x2 < $bx1 ? $bx1 : ($x2 > $bx2 ? $bx2 : $x2);
-                                    $y1 = $y1 < $by1 ? $by1 : ($y1 > $by2 ? $by2 : $y1);
-                                    $y2 = $y2 < $by1 ? $by1 : ($y2 > $by2 ? $by2 : $y2);
-
-                                    // SAT(x-1, y-1) + SAT(x+w-1, y+h-1) - SAT(x-1, y+h-1) - SAT(x+w-1, y-1)
-                                    //      x1   y1         x2      y2          x1   y1            x2    y1
-                                    $rect_sum += $r[4] * ($integral[$x2 + $y2]  - $integral[$x1 + $y2] - $integral[$x2 + $y1] + $integral[$x1 + $y1]);
-                                }
-                            }
-
-                            $where = $rect_sum / $swh < $thresholdf * $vnorm ? 0 : 1;
-                            // END Viola-Jones HAAR-Leaf evaluator
-
-                            if ($where)
-                            {
-                                if (!empty($feature['has_r']))
-                                {
-                                    $sum += $feature['r_val'];
-                                    break;
-                                }
-                                else
-                                {
-                                    $cur_node_ind = $feature['r_node'];
-                                }
-                            }
-                            else
-                            {
-                                if (!empty($feature['has_l']))
-                                {
-                                    $sum += $feature['l_val'];
-                                    break;
-                                }
-                                else
-                                {
-                                    $cur_node_ind = $feature['l_node'];
-                                }
-                            }
-                        }
-                        // END Viola-Jones HAAR-Tree evaluator
-
-                    }
-                    $pass = $sum > $threshold;
-                    // END Viola-Jones HAAR-Stage evaluator
-
-                    if (! $pass) break;
-                }
-
-                if ($pass)
-                {
-                    $ret[] = new HaarFeature($x, $y, $xsize, $ysize);
-                }
-            }
-        }
-
-        // return any features found in this step
-        return $ret;
     }
 
     // compute gray-scale image, integral image and square image (Viola-Jones)
@@ -642,7 +632,7 @@ class HaarFeature
 
     public static function byArea($a, $b)
     {
-        return $a->area - $b->area;
+        return $b->area - $a->area;
     }
 
     public function __construct($x = 0, $y = 0, $w = 0, $h = 0, $i = 0)
@@ -681,11 +671,14 @@ class HaarFeature
 
     public function add($f)
     {
-        // NOTE: adding should be merging instead ??
-        $this->x += $f->x;
-        $this->y += $f->y;
-        $this->width += $f->width;
-        $this->height += $f->height;
+        $x = $this->x + $f->x;
+        $y = $this->y + $f->y;
+        $w = $this->width + $f->width;
+        $h = $this->height + $f->height;
+        $this->x = $x;
+        $this->y = $y;
+        $this->width = $w;
+        $this->height = $h;
         return $this;
     }
 
@@ -774,7 +767,7 @@ class HaarFeature
 
     public function __toString()
     {
-        return '[ x: ' . $this->x . ', y: ' . $this->y . ', width: ' . $this->width . ', height: ' . $this->height . ' ]';
+        return '[x: ' . $this->x . ', y: ' . $this->y . ', width: ' . $this->width . ', height: ' . $this->height . ']';
     }
 }
 }
