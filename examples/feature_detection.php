@@ -22,17 +22,17 @@ $uploadedImage = false;
 
 if (isset($_POST['upload_form_submitted']))
 {
-    if (!isset($_FILES['img_upload']) || empty($_FILES['img_upload']['name']))
+    if (! isset($_FILES['img_upload']) || empty($_FILES['img_upload']['name']))
     {
         $error = "<strong>Error:</strong> You didn't upload a file";
     }
     else
     {
         $allowedExtensions = array('jpg', 'jpeg', 'gif', 'png');
-        preg_match('/\.('.implode($allowedExtensions, '|').')$/', $_FILES['img_upload']['name'], $fileExt);
-        if (!in_array(substr($fileExt[0], 1), $allowedExtensions))
+        preg_match('/\\.(' . implode('|', $allowedExtensions) . ')$/i', $_FILES['img_upload']['name'], $fileExt);
+        if (! in_array(strtolower(substr($fileExt[0], 1)), $allowedExtensions))
         {
-            $error = '<strong>Error:</strong> Invalid file format - please upload a picture file';
+            $error = '<strong>Error:</strong> Invalid file format - please upload a picture (.jpg, .jpeg, .gif, .png) file';
         }
         $uploadedImage = $_FILES['img_upload']['tmp_name'];
     }
@@ -43,7 +43,7 @@ if ($uploadedImage && !$error)
 {
 
     // read image
-    switch($fileExt[1])
+    switch(strtolower($fileExt[1]))
     {
         case 'jpg': case 'jpeg':
             $origImage = imagecreatefromjpeg($uploadedImage);
@@ -63,9 +63,10 @@ if ($uploadedImage && !$error)
     // cannyPruning sometimes depends on the image scaling, small image scaling seems to make canny pruning fail (if doCannyPruning is true)
     // optionally different canny thresholds can be set to overcome this limitation
     $found = $faceDetector
-                ->image($origImage, 0.5)
-                ->cannyThreshold(array('low'=>90, 'high'=>200))
-                ->detect(1, 1.1 /*1.25*/, 0.12 /*0.2*/, 1, true)
+                /* normalise image to some standard dimensions eg. 150 px width so that detection parameters below remain relatively standard as well */
+                ->image($origImage, 150 / imagesx($origImage))
+                ->cannyThreshold(array('low'=>80, 'high'=>200))
+                ->detect(1, 1.1 /*1.25*/, 0.12 /*0.2*/, 1, 0.2, false)
             ;
 
     // if detected
@@ -80,7 +81,7 @@ if ($uploadedImage && !$error)
         }, $faceDetector->objects);
 
         // display images
-        switch($fileExt[1])
+        switch(strtolower($fileExt[1]))
         {
             case 'jpg': case 'jpeg':
 

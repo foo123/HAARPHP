@@ -6,7 +6,7 @@ __Feature Detection Library for PHP__
 Based on [Viola-Jones Feature Detection Algorithm using Haar Cascades](http://www.cs.cmu.edu/~efros/courses/LBMV07/Papers/viola-cvpr-01.pdf)
 and improvement [Viola-Jones-Lienhart et al Feature Detection Algorithm](http://www.multimedia-computing.de/mediawiki//images/5/52/MRL-TR-May02-revised-Dec02.pdf)
 
-This is a port of [OpenCV `C++` Haar Detection](http://opencv.org/) (actually a port of [JViolaJones](http://code.google.com/p/jviolajones/) which is a port of OpenCV for `Java`) to `PHP`
+This is a port of [OpenCV C++ Haar Detection](https://github.com/opencv/opencv) and of [JViolaJones Java](http://code.google.com/p/jviolajones/)) to PHP.
 
 
 **there is also a [`javascript` version: HAAR.js](https://github.com/foo123/HAAR.js)**
@@ -81,13 +81,13 @@ __Explanation of parameters__
 
 __image()__
 ```php
-$detector->image($GDImage, $scale = 0.5);
+$detector->image($GDImage, $scale = 1.0);
 ```
 
 __Explanation of parameters__
 
 * `$GDImage` : an actual `GD` Image object.
-* `$scale` : The percent of scaling from the original image, so detection proceeds faster on a smaller image (default __0.5__ ). __NOTE__ scaling might alter the detection results sometimes, if having problems opt towards 1 (slower)
+* `$scale` : The percent of scaling from the original image, so detection proceeds faster on a smaller image (default __1.0__ ). __NOTE__ scaling might alter the detection results sometimes, if having problems opt towards 1 (slower)
 
 
 
@@ -128,7 +128,7 @@ __Explanation of parameters__
 
 __detect()__
 ```php
-$detector->detect($baseScale = 1, $scale_inc = 1.25, $increment = 0.1, $min_neighbors = 1 , $doCannyPruning = true);
+$detector->detect($baseScale = 1, $scale_inc = 1.25, $increment = 0.1, $min_neighbors = 1 , $epsilon = 0.2, $doCannyPruning = false);
 ```
 
 __Explanation of parameters__ ([JViolaJones Parameters](http://code.google.com/p/jviolajones/wiki/Parameters))
@@ -137,7 +137,8 @@ __Explanation of parameters__ ([JViolaJones Parameters](http://code.google.com/p
 * `$scale_inc` : The scale increment of the window size, at each step (default __1.25__ ).
 * `$increment` : The shift of the window at each sub-step, in terms of percentage of the window size (default __0.1__ ).
 * `$min_neighbors` : The minimum numbers of similar rectangles needed for the region to be considered as a feature (avoid noise) (default __1__ )
-* `$doCannyPruning` : enable Canny Pruning to pre-detect regions unlikely to contain features, in order to speed up the execution (optional default __true__ ). 
+* `$epsilon` : Epsilon value that determines similarity between detected rectangles. `0` means identical (default __0.2__ )
+* `$doCannyPruning` : enable Canny Pruning to pre-detect regions unlikely to contain features, in order to speed up the execution (optional default __false__ ). 
 
 
 __Examples included with face detection__
@@ -158,6 +159,9 @@ __Examples included with face detection__
 
 
 #### ChangeLog
+
+__1.0.2__
+* port code from latest version of opencv
 
 __1.0.1__
 * inline detection routine for further speed

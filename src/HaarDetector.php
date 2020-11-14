@@ -2,10 +2,10 @@
 /**
 *
 * HaarDetector: Feature Detection Library based on Viola-Jones / Lienhart et al. Haar Detection algorithm
-* modified port of jViolaJones for Java (http://code.google.com/p/jviolajones/) to PHP
+* modified port of jViolaJones for Java (http://code.google.com/p/jviolajones/) and OpenCV for C++ (https://github.com/opencv/opencv) to PHP
 *
 * https://github.com/foo123/HAARPHP
-* @version: 1.0.1
+* @version: 1.0.2
 *
 **/
 
@@ -13,7 +13,7 @@ if (! class_exists('HaarDetector'))
 {
 class HaarDetector
 {
-    CONST  VERSION = "1.0.1";
+    CONST  VERSION = "1.0.2";
 
     public $haardata = null;
     public $objects = null;
@@ -60,7 +60,7 @@ class HaarDetector
     }
 
     // set image for detector along with scaling
-    public function image(&$image, $scale = 0.5)
+    public function image(&$image, $scale = 1.0)
     {
         if ($image)
         {
@@ -119,7 +119,7 @@ class HaarDetector
     }
 
     // Detector detect method to start detection
-    public function detect($baseScale = 1.0, $scale_inc = 1.25, $increment = 0.5, $min_neighbors = 1, $doCannyPruning = true)
+    public function detect($baseScale = 1.0, $scale_inc = 1.25, $increment = 0.5, $min_neighbors = 1, $epsilon = 0.2, $doCannyPruning = false)
     {
         if (! $this->origSelection)
             $this->origSelection = new HaarFeature(0, 0, $this->origWidth, $this->origHeight);
@@ -347,12 +347,19 @@ class HaarDetector
         // return results
         if (! empty($ret))
         {
-            $this->objects = $this->merge($ret, $min_neighbors, $this->ratio, $this->origSelection);
+            $this->objects = HaarFeature::groupRectangles($ret, $min_neighbors, $epsilon);
         }
         else
         {
             $this->objects = array();
         }
+
+        $ratio = 1.0 / $this->ratio;
+        foreach($this->objects as $obj) $obj->scale($ratio)->round()->computeArea();
+        // sort according to size
+        // (a deterministic way to present results under different cases)
+        usort($this->objects, array('HaarFeature', 'byArea'));
+
 
         return 0 < count($this->objects);
     }
@@ -520,10 +527,22 @@ class HaarDetector
         }
         $this->canny =& $canny;
     }
+}
 
-    // merge the detected features if needed
-    private function merge($rects, $min_neighbors, $ratio, $selection)
+// HAAR Feature/Rectangle Class
+class HaarFeature
+{
+    public $index = 0;
+    public $x = 0;
+    public $y = 0;
+    public $width = 0;
+    public $height = 0;
+    public $area = 0;
+    public $isInside = false;
+
+    public static function groupRectangles($rects, $min_neighbors, $epsilon = 0.2)
     {
+        // merge the detected features if needed
         $rlen = count($rects);
         $ref = array_fill(0, $rlen, 0);
         $feats = array();
@@ -537,7 +556,7 @@ class HaarDetector
             $found = false;
             for ($j = 0; $j < $i; $j++)
             {
-                if ($rects[$j]->almostEqual($rects[$i]))
+                if ($rects[$j]->equals($rects[$i], $epsilon))
                 {
                     $found = true;
                     $ref[$i] = $ref[$j];
@@ -579,8 +598,6 @@ class HaarDetector
             }
         }
 
-        if (1 !== $ratio) $ratio = 1.0 / $ratio;
-
         // filter inside rectangles
         $rlen = count($feats);
         for ($i = 0; $i < $rlen; $i++)
@@ -604,31 +621,10 @@ class HaarDetector
             {
                 array_splice($feats, $i, 1);
             }
-            else
-            {
-                // scaled down, scale them back up
-                if (1 !== $ratio) $feats[$i]->scale($ratio);
-                $feats[$i]->round()->computeArea();
-            }
         }
 
-        // sort according to size
-        // (a deterministic way to present results under different cases)
-        usort($feats, array('HaarFeature', 'byArea'));
         return $feats;
     }
-}
-
-// HAAR Feature/Rectangle Class
-class HaarFeature
-{
-    public $index = 0;
-    public $x = 0;
-    public $y = 0;
-    public $width = 0;
-    public $height = 0;
-    public $area = 0;
-    public $isInside = false;
 
     public static function byArea($a, $b)
     {
@@ -706,35 +702,30 @@ class HaarFeature
         return $this->area;
     }
 
-    public function inside($f)
+    public function inside($f, $eps = 0.1)
     {
-        return ($this->x >= $f->x) &&
-            ($this->y >= $f->y) &&
-            ($this->x + $this->width <= $f->x + $f->width) &&
-            ($this->y + $this->height <= $f->y + $f->height);
+        if (0 > $eps) $eps = 0;
+        $dx = $f->width * $eps;
+        $dy = $f->height * $eps;
+        return ($this->x >= $f->x - $dx) &&
+            ($this->y >= $f->y - $dy) &&
+            ($this->x + $this->width <= $f->x + $f->width + $dx) &&
+            ($this->y + $this->height <= $f->y + $f->height + $dy);
     }
 
-    public function contains($f)
+    public function contains($f, $eps = 0.1)
     {
-        return $f->inside($this);
+        return $f->inside($this, $eps);
     }
 
-    public function equal($f)
+    public function equals($f, $eps = 0.2)
     {
-        return ($f->x === $this->x) &&
-            ($f->y === $this->y) &&
-            ($f->width === $this->width) &&
-            ($f->height === $this->height);
-    }
-
-    public function almostEqual($f)
-    {
-        $d1 = max($f->width, $this->width) * 0.2;
-        $d2 = max($f->height, $this->height) * 0.2;
-        return (abs($this->x - $f->x) <= $d1) &&
-            (abs($this->y - $f->y) <= $d2) &&
-            (abs($this->width - $f->width) <= $d1) &&
-            (abs($this->height - $f->height) <= $d2);
+        if (0 > $eps) $eps = 0;
+        $delta = $eps * (min($this->width, $f->width) + min($this->height, $f->height)) * 0.5;
+        return abs($this->x - $f->x) <= $delta &&
+            abs($this->y - $f->y) <= $delta &&
+            abs($this->x + $this->width - $f->x - $f->width) <= $delta &&
+            abs($this->y + $this->height - $f->y - $f->height) <= $delta;
     }
 
     public function clone()
