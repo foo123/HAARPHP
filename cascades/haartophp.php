@@ -226,6 +226,16 @@ class HaarToPhpConverter
         self::error('Unknown error during import');
     }
 
+    public static function formatInt($x)
+    {
+        return (int)$x;
+    }
+
+    public static function formatFloat($x)
+    {
+        return (float)$x;
+    }
+
     public static function convert($infile, $var_in_php = '')
     {
         $data = self::readXML($infile);
@@ -239,7 +249,7 @@ class HaarToPhpConverter
         $size = explode(' ', trim($racine["size"]));
         $size1 = isset($size[0]) ? $size[0] : 0;
         $size2 = isset($size[1]) ? $size[1] : 0;
-        echo("'size1' => " . $size1 . ",'size2' => " . $size2);
+        echo("'size1' => " . self::formatInt($size1) . ",'size2' => " . self::formatInt($size2));
 
         echo(", 'stages' => array(");
         if (isset($racine['stages']['_']))
@@ -251,13 +261,13 @@ class HaarToPhpConverter
                 else echo(", array(");
 
                 $thres = (isset($stage["stage_threshold"])) ? $stage["stage_threshold"] : 0;
-                echo("'thres' => " . $thres);
+                echo("'thres' => " . self::formatFloat($thres));
                 echo(", 'trees' => array(");
 
                 if (isset($stage['trees']['_']))
                 {
                     $i2 = 0;
-                    foreach($stage['trees']['_'] as $tree)
+                    foreach ($stage['trees']['_'] as $tree)
                     {
                         if (0 === $i2) echo("array(");
                         else echo(", array(");
@@ -278,28 +288,28 @@ class HaarToPhpConverter
                             $right_node = "-1";
                             $right_val = "0";
                             $has_right_val = "0";
-                            if(isset($feature["left_val"]))
+                            if (isset($feature["left_val"]))
                             {
-                                $left_val = $feature["left_val"];
+                                $left_val = self::formatFloat($feature["left_val"]);
                                 $has_left_val = "1";
                             }
                             else
                             {
-                                $left_node = $feature["left_node"];
+                                $left_node = self::formatInt($feature["left_node"]);
                                 $has_left_val = "0";
                             }
 
-                            if(isset($feature["right_val"]))
+                            if (isset($feature["right_val"]))
                             {
-                                $right_val = $feature["right_val"];
+                                $right_val = self::formatFloat($feature["right_val"]);
                                 $has_right_val = "1";
                             }
                             else
                             {
-                                $right_node = $feature["right_node"];
+                                $right_node = self::formatInt($feature["right_node"]);
                                 $has_right_val = "0";
                             }
-                            echo("'thres' => " . $thres2);
+                            echo("'thres' => " . self::formatFloat($thres2));
                             echo(", 'has_l' => " . $has_left_val . ", 'l_val' => " . $left_val . ", 'l_node' => " . $left_node);
                             echo(", 'has_r' => " . $has_right_val . ", 'r_val' => " . $right_val . ", 'r_node' => " . $right_node);
 
@@ -317,24 +327,24 @@ class HaarToPhpConverter
                             if (isset($feature['feature']['rects']['_']))
                             {
                                 $i3 = 0;
-                                foreach($feature['feature']['rects']['_'] as $rect)
+                                foreach ($feature['feature']['rects']['_'] as $rect)
                                 {
                                     if (0 === $i3) echo("array(");
                                     else echo(", array(");
-                                    echo(implode(", ", explode(' ', trim($rect))));
+                                    echo(implode(", ", array_map(array(__CLASS__, 'formatFloat'), explode(' ', trim($rect)))));
                                     echo(")");
-                                    $i3++;
+                                    ++$i3;
                                 }
                             }
                             echo("))");
-                            $i4++;
+                            ++$i4;
                         }
                         echo("))");
-                        $i2++;
+                        ++$i2;
                     }
                 }
                 echo("))");
-                $i1++;
+                ++$i1;
             }
         }
         echo("));\n");
