@@ -5,15 +5,15 @@
 * modified port of jViolaJones for Java (http://code.google.com/p/jviolajones/) and OpenCV for C++ (https://github.com/opencv/opencv) to PHP
 *
 * https://github.com/foo123/HAARPHP
-* @version: 1.0.2
+* @version: 1.0.5
 *
 **/
 
-if (! class_exists('HaarDetector'))
+if (!class_exists('HaarDetector'))
 {
 class HaarDetector
 {
-    CONST  VERSION = "1.0.2";
+    CONST  VERSION = "1.0.5";
 
     public $haardata = null;
     public $objects = null;
@@ -151,7 +151,7 @@ class HaarDetector
         $sizex = intval($haar['size1']);
         $sizey = intval($haar['size2']);
 
-        $maxScale = min($this->scaledSelection->width/$sizex, $this->scaledSelection->height/$sizey);
+        $maxScale = min($w/$sizex, $h/$sizey);
         $scale = $baseScale;
 
         $sl = count($haar_stages);
@@ -175,8 +175,8 @@ class HaarDetector
             $tyw = $ysize * $w;
             $tys = $ystep * $w;
             $startty = $starty * $tys;
-            $xl = $selw - $xsize;
-            $yl = $selh - $ysize;
+            $xl = $startx + $selw - $xsize;
+            $yl = $starty + $selh - $ysize;
             $swh = $xsize * $ysize;
 
             for ($y = $starty, $ty = $startty; $y < $yl; $y += $ystep, $ty += $tys)
@@ -379,11 +379,11 @@ class HaarDetector
         while ($i < $w)
         {
             $rgb = imagecolorat($canvas, $i, 0);
-            $r = ($rgb >> 16) & 255;
-            $g = ($rgb >> 8) & 255;
-            $b = $rgb & 255;
+            $r = (($rgb >> 16) & 255);
+            $g = (($rgb >> 8) & 255);
+            $b = ($rgb & 255);
             // 0,29901123046875  0,58697509765625  0,114013671875 with roundoff
-            $g = 0.299 * $r + 0.587 * $g + 0.114 * $b;
+            $g = (0.299 * $r + 0.587 * $g + 0.114 * $b);
 
             $sum += $g;
             $sum2 += $g*$g;
@@ -393,12 +393,12 @@ class HaarDetector
 
             // RSAT(-1, y) = RSAT(x, -1) = RSAT(x, -2) = RSAT(-1, -1) = RSAT(-1, -2) = 0
             // RSAT(x, y) = RSAT(x-1, y-1) + RSAT(x+1, y-1) - RSAT(x, y-2) + I(x, y) + I(x, y-1)    <-- rotated(tilted) integral image at 45deg
-            $gray[$i] = $g;
+            $gray[$i] = (int)$g;
             $integral[$i] = $sum;
             $squares[$i] = $sum2;
             $tilted[$i] = $g;
 
-            $i++;
+            ++$i;
         }
         // other rows
         $i = 0;
@@ -408,11 +408,11 @@ class HaarDetector
         while ($k < $count)
         {
             $rgb = imagecolorat($canvas, $i, $j);
-            $r = ($rgb >> 16) & 255;
-            $g = ($rgb >> 8) & 255;
-            $b = $rgb & 255;
+            $r = (($rgb >> 16) & 255);
+            $g = (($rgb >> 8) & 255);
+            $b = ($rgb & 255);
             // 0,29901123046875  0,58697509765625  0,114013671875 with roundoff
-            $g = 0.299 * $r + 0.587 * $g + 0.114 * $b;
+            $g = (0.299 * $r + 0.587 * $g + 0.114 * $b);
 
             $sum += $g;
             $sum2 += $g*$g;
@@ -422,12 +422,12 @@ class HaarDetector
 
             // RSAT(-1, y) = RSAT(x, -1) = RSAT(x, -2) = RSAT(-1, -1) = RSAT(-1, -2) = 0
             // RSAT(x, y) = RSAT(x-1, y-1) + RSAT(x+1, y-1) - RSAT(x, y-2) + I(x, y) + I(x, y-1)    <-- rotated(tilted) integral image at 45deg
-            $gray[$k] = $g;
+            $gray[$k] = (int)$g;
             $integral[$k] = $integral[$k-$w] + $sum;
             $squares[$k] = $squares[$k-$w] + $sum2;
             $tilted[$k] = $tilted[$k+1-$w] + ($g + $gray[$k-$w]) + (($j>1) ? $tilted[$k-$w-$w] : 0) + (($i>0) ? $tilted[$k-1-$w] : 0);
 
-            $k++; $i++; if ($i>=$w) { $i=0; $j++; $sum=$sum2=0; }
+            ++$k; ++$i; if ($i>=$w) {$i=0; ++$j; $sum=$sum2=0;}
         }
         $this->integral =& $integral;
         $this->squares =& $squares;
@@ -456,7 +456,7 @@ class HaarDetector
                 $ind_1 = $ind0-$w;
                 $ind_2 = $ind_1-$w;
 
-                $sum = (0
+                $sum = (float)(0
                         + ($gray[$ind_2-2] << 1) + ($gray[$ind_1-2] << 2) + ($gray[$ind0-2] << 2) + ($gray[$ind0-2])
                         + ($gray[$ind1-2] << 2) + ($gray[$ind2-2] << 1) + ($gray[$ind_2-1] << 2) + ($gray[$ind_1-1] << 3)
                         + ($gray[$ind_1-1]) + ($gray[$ind0-1] << 4) - ($gray[$ind0-1] << 2) + ($gray[$ind1-1] << 3)
@@ -501,7 +501,13 @@ class HaarDetector
                         )
                         ;
 
-                $canny[$ind0] = abs($grad_x) + abs($grad_y);
+                $grad_x = abs($grad_x);
+                $grad_y = abs($grad_y);
+                //$canny[$ind0] = $grad_x + $grad_y;
+                $tM = max($grad_x, $grad_y);
+                $tm = min($grad_x, $grad_y);
+                // approximation of square root
+                $canny[$ind0] = $tM ? ($tM*(1+0.43*$tm/$tM*$tm/$tM)) : 0;
            }
         }
 
