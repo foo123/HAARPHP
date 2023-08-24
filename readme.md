@@ -159,6 +159,9 @@ __Examples included with face detection__
 
 #### ChangeLog
 
+__1.0.6__
+* correction when selection is used again (revert to previous code)
+
 __1.0.5__
 * correction when selection is used, use same version as HAAR.js
 * implicit type casting warnings in php 8 handled

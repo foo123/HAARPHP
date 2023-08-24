@@ -5,7 +5,7 @@
 * modified port of jViolaJones for Java (http://code.google.com/p/jviolajones/) and OpenCV for C++ (https://github.com/opencv/opencv) to PHP
 *
 * https://github.com/foo123/HAARPHP
-* @version: 1.0.5
+* @version: 1.0.6
 *
 **/
 
@@ -13,7 +13,7 @@ if (!class_exists('HaarDetector'))
 {
 class HaarDetector
 {
-    CONST  VERSION = "1.0.5";
+    CONST  VERSION = "1.0.6";
 
     public $haardata = null;
     public $objects = null;
@@ -151,7 +151,7 @@ class HaarDetector
         $sizex = intval($haar['size1']);
         $sizey = intval($haar['size2']);
 
-        $maxScale = min($w/$sizex, $h/$sizey);
+        $maxScale = min($selw/$sizex, $selh/$sizey);
         $scale = $baseScale;
 
         $sl = count($haar_stages);
@@ -209,7 +209,8 @@ class HaarDetector
                     $total_x2 = ($squares[$p3] - $squares[$p2] - $squares[$p1] + $squares[$p0]) / $swh;
 
                     $vnorm = $total_x2 - $total_x * $total_x;
-                    $vnorm = $vnorm > 1 ? sqrt($vnorm) : /*$vnorm*/  1;
+                    if (0 >= $vnorm) continue;
+                    $vnorm = /*$vnorm > 1 ?*/ sqrt($vnorm) /*: /*$vnorm* /  1*/;
 
                     $pass = true;
                     for ($s = 0; $s < $sl; $s++)
